@@ -1,3 +1,4 @@
+import argparse
 import re
 import sys
 import yaml
@@ -53,10 +54,11 @@ class Config:
 
 
 class Workspace(metaclass=SingletonMeta):
-    def __init__(self, workspace_path: str, project_name: str, config: Config = None):
+    def __init__(self, workspace_path: str, project_name: str, config: Config = None, args: argparse.Namespace = None):
         self._project_name = re.sub('[\s,]', '', project_name)
         self._logger = logging.getLogger(project_name)
         self._config = config
+        self._args = args
         self._workspace_path = pathlib.Path(workspace_path).absolute()
         self.setup_logger()
         self.setup_workspace()
@@ -66,6 +68,12 @@ class Workspace(metaclass=SingletonMeta):
 
     def get_config(self):
         return self._config
+
+    def set_args(self, args):
+        self._args = args
+
+    def get_args(self):
+        return self._args
 
     def get_logger(self):
         return self._logger
