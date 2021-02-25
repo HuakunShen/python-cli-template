@@ -2,6 +2,7 @@ import argparse
 import re
 import sys
 import yaml
+import json
 import pathlib
 import logging
 import datetime
@@ -30,6 +31,7 @@ class Config:
             self.dump_config()
         logger.info("loading configuration file")
         self._config = self.load_config()
+        logger.info("Config File Content=\n" + json.dumps(self._config, indent=2, sort_keys=True))
 
     def get_config_content(self):
         return self._config
@@ -54,7 +56,19 @@ class Config:
 
 
 class Workspace(metaclass=SingletonMeta):
-    def __init__(self, workspace_path: str, project_name: str, config: Config = None, args: argparse.Namespace = None):
+    """
+    Have to call initialize() after creating a workspace
+    """
+
+    def __init__(self):
+        self._project_name = None
+        self._logger = None
+        self._config = None
+        self._args = None
+        self._workspace_path = None
+
+    def initialize(self, workspace_path: str, project_name: str, config: Config = None,
+                   args: argparse.Namespace = None):
         self._project_name = re.sub('[\s,]', '', project_name)
         self._logger = logging.getLogger(project_name)
         self._config = config
@@ -127,3 +141,7 @@ class Workspace(metaclass=SingletonMeta):
         self._logger.addHandler(file_handler)
         self._logger.addHandler(stdout_handler)
         self._logger.info("logger finished setup")
+
+
+if __name__ == '__main__':
+    pass
