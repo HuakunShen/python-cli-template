@@ -8,7 +8,6 @@ import logging
 import datetime
 from src import constants
 from yaml import CLoader
-from src.singleton import SingletonMeta
 
 
 class Config:
@@ -21,13 +20,17 @@ class Config:
         }
     }
 
-    def __init__(self, ):
-        w = Workspace()
+    def __init__(self):
+        w = Workspace.get_instance()
         logger = w.get_logger()
         self._config_path = w.get_workspace_path() / 'config.yaml'
         logger.info(f"init config, config path={self._config_path}")
-        if not self._config_path.exists():
-            logger.info("config file doesn't exists, creating a new one")
+        if not self._config_path.exists() or w.get_args().overwrite:
+            if w.get_args().overwrite:
+                logger.info("overwrite option is on, config file will be overwritten")
+            else:
+                logger.info("config file doesn't exists, creating a new one")
+
             self.dump_config()
         logger.info("loading configuration file")
         self._config = self.load_config()
@@ -40,7 +43,7 @@ class Config:
         with open(str(self._config_path), 'r') as f:
             config = yaml.load(f, Loader=CLoader)
             if config['config_version'] != Config.version:
-                w = Workspace()
+                w = Workspace.get_instance()
                 template_file_path = w.get_workspace_path() / 'config-template.yaml'
                 msg = f"configuration file version={config['config_version']} isn't the same as " \
                       f"latest version={Config.version}, use the latest version. A template file will be saved to " \
@@ -55,17 +58,30 @@ class Config:
             yaml.dump(Config.config_template, f)
 
 
-class Workspace(metaclass=SingletonMeta):
+class Workspace:
     """
     Have to call initialize() after creating a workspace
     """
 
+    __instance = None
+
+    @staticmethod
+    def get_instance():
+        """ Static access method. """
+        if Workspace.__instance is None:
+            Workspace()
+        return Workspace.__instance
+
     def __init__(self):
-        self._project_name = None
-        self._logger = None
-        self._config = None
-        self._args = None
-        self._workspace_path = None
+        if Workspace.__instance is not None:
+            raise Exception("This class is a singleton and should not be init twice!")
+        else:
+            Workspace.__instance = self
+            self._project_name = None
+            self._logger = None
+            self._config = None
+            self._args = None
+            self._workspace_path = None
 
     def initialize(self, workspace_path: str, project_name: str, config: Config = None,
                    args: argparse.Namespace = None):
